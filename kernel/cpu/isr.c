@@ -120,7 +120,15 @@ char *exception_messages[] =
 
 void isr_handler(registers_t* r) 
 {
-    printf("Received interrupt: %d, message: %s\n", r->int_no, exception_messages[r->int_no]);
+    if (interrupt_handlers[r->int_no] != 0)
+    {
+        isr_t handler = interrupt_handlers[r->int_no];
+        handler(r);
+    }
+    else
+    {
+        printf("Recieved interrupt without a handler: %u\n", r->int_no);
+    }
 }
 
 void register_interrupt_handler(uint8_t n, isr_t handler) 

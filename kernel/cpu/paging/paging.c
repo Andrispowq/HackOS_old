@@ -1,5 +1,6 @@
 #include "paging.h"
 #include "../../drivers/screen.h"
+#include "../idt.h"
 
 // The kernel's page directory
 page_directory_t* kernel_directory = 0;
@@ -62,7 +63,7 @@ static uint32_t first_frame()
                 uint32_t toTest = 0x1 << j;
                 if (!(frames[i] & toTest))
                 {
-                    return i * 4 * 8+j;
+                    return i * 4 * 8 + j;
                 }
             }
         }
@@ -81,7 +82,6 @@ void alloc_frame(page_t* page, int is_kernel, int is_writeable)
         uint32_t idx = first_frame(); // idx is now the index of the first free frame.
         if (idx == (uint32_t) - 1)
         {
-            // PANIC is just a macro that prints a message to the screen then hits an infinite loop.
             printf("No free frames!\n");
             asm volatile("hlt");
         }
@@ -89,14 +89,14 @@ void alloc_frame(page_t* page, int is_kernel, int is_writeable)
         set_frame(idx * 0x1000); // this frame is now ours!
 
         page->present = 1; // Mark it as present.
-        page->rw = (is_writeable)?1:0; // Should the page be writeable?
-        page->user = (is_kernel)?0:1; // Should the page be user-mode?
+        page->rw = (is_writeable) ? 1 : 0; // Should the page be writeable?
+        page->user = (is_kernel) ? 0 : 1; // Should the page be user-mode?
         page->frame = idx;
     }
 }
 
 // Function to deallocate a frame.
-void free_frame(page_t *page)
+void free_frame(page_t* page)
 {
     uint32_t frame;
     if (!(frame = page->frame))
@@ -114,8 +114,35 @@ void free_frame(page_t *page)
     PAGING CODE
 */
 
+//uint32_t page_directory[1024] __attribute__((aligned(4096)));
+//uint32_t first_page_table[1024] __attribute__((aligned(4096)));
+
 void initialise_paging()
 {
+    //set each entry to not present
+    /*int i;
+    for(i = 0; i < 1024; i++)
+    {
+        // This sets the following flags to the pages:
+        //   Supervisor: Only kernel-mode can access them
+        //   Write Enabled: It can be both read from and written to
+        //   Not Present: The page table is not present
+        page_directory[i] = 0x00000002;
+    }
+    
+    //we will fill all 1024 entries in the table, mapping 4 megabytes
+    for(i = 0; i < 1024; i++)
+    {
+        // As the address is page aligned, it will always leave 12 bits zeroed.
+        // Those bits are used by the attributes ;)
+        first_page_table[i] = (i * 0x1000) | 3; // attributes: supervisor level, read/write, present.
+    }
+
+    // attributes: supervisor level, read/write, present
+    page_directory[0] = ((unsigned int)first_page_table) | 3;
+
+    printf("Page directory address: %x\n", page_directory);*/
+
     // The size of physical memory. For the moment we
     // assume it is 16MB big.
     uint32_t mem_end_page = 0x1000000;
@@ -129,37 +156,39 @@ void initialise_paging()
 
     // Let's make a page directory.
     kernel_directory = (page_directory_t*) kmalloc_a(sizeof(page_directory_t));
+    memory_set((uint8_t*)kernel_directory, 0, sizeof(page_directory_t));
     current_directory = kernel_directory;
 
-    printf("End of memory after allocating a page directory, of size %x is: %x\n", sizeof(page_directory_t), free_mem_addr);
+    printf("Allocated page directory (size: %x), memory location is: %x\n", sizeof(page_directory_t), current_directory);
 
     // We need to identity map (phys addr = virt addr) from
     // 0x0 to the end of used memory, so we can access this
     // transparently, as if paging wasn't enabled.
     // NOTE that we use a while loop here deliberately.
-    // inside the loop body we actually change placement_address
+    // inside the loop body we actually change free_mem_addr
     // by calling kmalloc(). A while loop causes this to be
     // computed on-the-fly rather than once at the start.
     int i = 0;
-    while (i < free_mem_addr)
+    while (i < mem_end_page)
     {
-        printf("Page allocation on: %x, free_mem_addr is: %x\n", i, free_mem_addr);
         // Kernel code is readable but not writeable from userspace.
-        alloc_frame(get_page(i, 1, kernel_directory), 0, 0);
+        page_t* page = get_page(i, 1, kernel_directory);
+        alloc_frame(page, 0, 0);
+
         i += 0x1000;
     }
 
     // Before we enable paging, we must register our page fault handler.
-    register_interrupt_handler(IRQ14, page_fault);
+    register_interrupt_handler(14, page_fault);
 
     // Now, enable paging!
-    //switch_page_directory(kernel_directory);
+    switch_page_directory(kernel_directory);
 }
 
 void switch_page_directory(page_directory_t* dir)
 {
     current_directory = dir;
-    asm volatile("mov %0, %%cr3" :: "r"(&dir->tablesPhysical));
+    asm volatile("mov %0, %%cr3" :: "r"(dir->tablesPhysical)/*(page_directory)*/);
     uint32_t cr0;
     asm volatile("mov %%cr0, %0" : "=r"(cr0));
     cr0 |= 0x80000000; // Enable paging!
@@ -180,7 +209,8 @@ page_t* get_page(uint32_t address, int make, page_directory_t* dir)
     {
         uint32_t tmp;
         dir->tables[table_idx] = (page_table_t*) kmalloc_ap(sizeof(page_table_t), &tmp);
-        dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US.
+        memory_set((uint8_t*)dir->tables[table_idx], 0, 0x1000);
+        dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US
         return &dir->tables[table_idx]->pages[address % 1024];
     }
     else

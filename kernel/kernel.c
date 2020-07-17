@@ -41,7 +41,7 @@ void kernel_main()
     printf("Location of the kernel_main function: %x\n", kernel_main);
 
     printf("Type something, it will go through the kernel\n"
-        "Type END to halt the CPU\n> ");
+        "Type 'end' to halt the CPU\n> ");
 }
 
 void user_input(char *input) 
@@ -54,10 +54,6 @@ void user_input(char *input)
 
     if (strcmp(input, "end") == 0) 
     {
-        printf("A quick page fault before we shut down! :D\n");
-        uint32_t* ptr = (uint32_t*)0xA0000000;
-        uint32_t page_fault = *ptr;
-
         printf("Stopping the CPU. Bye!\n");
         asm volatile("hlt"); //This requires the kernel, the other commands don't
     } else

@@ -83,7 +83,7 @@ static void keyboard_callback(registers_t* regs)
 
         if(letter == '?')
         {
-            char* scanname = sc_name[(int)scancode];
+            char* scanname = (char*)sc_name[(int)scancode];
             if(strcmp(scanname, "Lctrl") == 0)
             {
                 shift_down = 0;
