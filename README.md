@@ -8,7 +8,7 @@ I have a lot of plans, these are:
  - [x] Create the Interrupt Descriptor Table, enable interrupts
  - [x] Create a very simple timer and keyboard driver
  - [x] Write a simple kmalloc() function for basic, 4K aligned and unaligned memory allocations for the kernel
- - [ ] Implement a basic paging system, for virtual memory
+ - [x] Implement a basic paging system, for virtual memory
  - [ ] Write a second stage bootloader, so that the kernel can be bigger then 64 KiB, and it can be placed anywhere in the physical address space
  - [ ] Write a proper memory management system to use by the kernel
  - [ ] Write a VGA driver for low resolution (and maybe high resolution) graphics (256-bit)
