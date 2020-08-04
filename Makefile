@@ -1,5 +1,5 @@
-C_SOURCES = $(wildcard kernel/*.c kernel/drivers/*.c dkernel/rivers/ata/*.c kernel/cpu/*.c kernel/libc/*.c kernel/console/*.c kernel/cpu/paging/*.c)
-HEADERS = $(wildcard kernel/*.h kernel/drivers/*.h kernel/drivers/ata/*.h kernel/cpu/*.h kernel/libc/*.h kernel/console/*.h kernel/cpu/paging/*.h)
+C_SOURCES = $(wildcard kernel/*.c kernel/drivers/*.c dkernel/rivers/ata/*.c kernel/cpu/*.c kernel/libc/*.c kernel/libc/data_structures/*.c kernel/console/*.c kernel/cpu/paging/*.c)
+HEADERS = $(wildcard kernel/*.h kernel/drivers/*.h kernel/drivers/ata/*.h kernel/cpu/*.h kernel/libc/*.h kernel/libc/data_structures/*.h kernel/console/*.h kernel/cpu/paging/*.h)
 # Nice syntax for file extension replacement
 OBJ = ${C_SOURCES:.c=.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o} 
 
@@ -50,4 +50,4 @@ debug: os-image.bin kernel.elf
 
 clean:
 	rm -rf *.bin *.dis *.o os-image.bin *.elf
-	rm -rf kernel/*.o boot/*.bin kernel/drivers/*.o kernel/drivers/ata/*.o kernel/boot/*.o kernel/cpu/*.o kernel/libc/*.o kernel/console/*.o kernel/cpu/paging/*.o kernel/second_stage_loader/*.o
+	rm -rf kernel/*.o boot/*.bin kernel/drivers/*.o kernel/drivers/ata/*.o kernel/boot/*.o kernel/cpu/*.o kernel/libc/*.o kernel/libc/data_structures/*.o kernel/console/*.o kernel/cpu/paging/*.o kernel/second_stage_loader/*.o

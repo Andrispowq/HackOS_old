@@ -7,6 +7,8 @@
 #define low_16(address) (uint16_t)((address) & 0xFFFF)
 #define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
 
+#define ASSERT(x) if(!(x)) printf("ERROR: assertion check failed, in file: %s, at line: %d\n", __FILE__, __LINE__);
+
 /*typedef unsigned char        uint8_t;
 typedef          char         int8_t;
 typedef unsigned short      uint16_t;

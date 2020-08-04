@@ -30,15 +30,17 @@ void kernel_main()
     isr_install();
     irq_install();
 
+    uint32_t a = kmalloc(8);
     initialise_paging();
+    uint32_t b = kmalloc(8);
+    uint32_t c = kmalloc(8);
+    printf("A: %x, B: %x, C: %x\n", a, b, c);
 
-    int arr[200];
-
-    int stack_ptr = get_stack_pointer();
-    int base_ptr = get_base_pointer();
-    printf("Current stack frame (from top to bottom): %x -> %x\n", stack_ptr, base_ptr);
-
-    printf("Location of the kernel_main function: %x\n", kernel_main);
+    kfree((void*)c);
+    kfree((void*)b);
+    uint32_t d = kmalloc(8);
+    printf("D: %x\n", d);
+    kfree((void*)d);
 
     printf("Type something, it will go through the kernel\n"
         "Type 'end' to halt the CPU\n> ");
