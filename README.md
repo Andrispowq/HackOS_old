@@ -4,7 +4,7 @@ This is a hobby operating system I'm currently developing. I have big hopes that
 I have a lot of plans, these are:
  - [x] Create a simple first-stage bootloader
  - [x] Jump into the kernel, written in C
- - [x] Create a simple VGA driver for outputting text in 25 x 80 text mode
+ - [x] Create a simple VGA driver for outputting text in 80 x 25 text mode
  - [x] Create the Interrupt Descriptor Table, enable interrupts
  - [x] Create a very simple timer and keyboard driver
  - [x] Write a simple kmalloc() function for basic, 4K aligned and unaligned memory allocations for the kernel
