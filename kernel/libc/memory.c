@@ -37,7 +37,7 @@ uint32_t kmalloc_int(size_t size, int align, uint32_t* phys_addr)
         if (phys_addr != 0)
         {
             page_t* page = get_page((uint32_t)addr, 0, kernel_directory);
-            *phys_addr = page->frame * 0x1000 + (uint32_t)addr & 0xFFF;
+            *phys_addr = page->frame * 0x1000 + ((uint32_t)addr & 0xFFF);
         }
 
         return (uint32_t)addr;
