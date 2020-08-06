@@ -5,22 +5,26 @@ extern void free_frame(page_t* page);
 extern void alloc_frame(page_t* page, int is_kernel, int is_writeable);
 extern page_t* get_page(uint32_t address, int make, page_directory_t* dir);
 
-void memory_copy(uint8_t* source, uint8_t* dest, int nbytes) 
+void* memcpy(void* dest, const void* src, size_t n)
 {
     int i;
-    for (i = 0; i < nbytes; i++) 
+    for (i = 0; i < n; i++) 
     {
-        *(dest + i) = *(source + i);
+        *((uint8_t*)dest + i) = *((uint8_t*)src + i);
     }
+
+    return dest;
 }
 
-void memory_set(uint8_t* dest, uint8_t val, uint32_t len) 
+void* memset(void* dest, int c, size_t n) 
 {
     uint8_t* temp = (uint8_t*) dest;
-    for (; len != 0; len--) 
+    for (; n != 0; n--) 
     {
-        *temp++ = val;
+        *temp++ = c;
     }
+
+    return dest;
 }
 
 extern uint32_t end;

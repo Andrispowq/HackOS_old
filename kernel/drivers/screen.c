@@ -141,9 +141,9 @@ int putchar(char str)
 
         for (i = 1; i < MAX_ROWS; i++)
         {
-            memory_copy((char*)(VIDEO_ADDRESS + get_offset(0, i)),
-                        (char*)(VIDEO_ADDRESS + get_offset(0, i - 1)),
-                        MAX_COLS * 2);
+            memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i - 1)),
+                (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
+                MAX_COLS * 2);
         }
 
         /* Blank last line */

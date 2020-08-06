@@ -6,19 +6,20 @@
 #include "../libc/function.h"
 #include "../kernel.h"
 
+#define HUNGARIAN_LAYOUT 0
+
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
 
-static char key_buffer[256];
+#define SCANCODE_MAX 57
 
-#define SC_MAX 57
+#define RELEASED 0x80
+#define KEY_BUFFER_SIZE 255
 
-int shift_down = 0;
-int control_down = 0;
-int super_down = 0;
-int alt_down = 0;
+static char key_buffer[KEY_BUFFER_SIZE + 1];
 
-#define HUNGARIAN_LAYOUT 0
+//Bit 0 -> shift, 1 -> control, 2 -> super, 3 -> alt
+int control_keys = 0;
 
 #if HUNGARIAN_LAYOUT != 0
 //Hungarian layout
@@ -52,13 +53,15 @@ const char sc_ascii[] = { '?', '?', '1', '2', '3', '4', '5', '6',
         'B', 'N', 'M', ',', '.', '/', '?', '?', '?', ' '};
 #endif
 
+int get_index_of_control_key(int scancode);
+
 static void keyboard_callback(registers_t* regs) 
 {
     //the PIC leaves us the scancode in port 0x60 
     uint8_t scancode = port_byte_in(0x60);
 
-    if (scancode > SC_MAX) 
-        return;
+    //if (scancode > SCANCODE_MAX) 
+    //    return;
 
     if (scancode == BACKSPACE) 
     {
@@ -71,54 +74,43 @@ static void keyboard_callback(registers_t* regs)
     else if (scancode == ENTER) 
     {
         printf("\n");
-        user_input(key_buffer); /* kernel-controlled function */
+        user_input(key_buffer);
         key_buffer[0] = '\0';
     } 
     else 
     {
+        //If full, flush the buffer
         if(strlen(key_buffer) == 255)
-            return;
+        {
+            printf("\n");
+            user_input(key_buffer);
+            key_buffer[0] = '\0';
+        }
 
+        //If we hit a control key, we should act on it
         char letter = sc_ascii[(int)scancode];
+        int idx = (int)(scancode & RELEASED ? scancode - RELEASED : scancode);
 
-        if(letter == '?')
+        if(sc_ascii[idx] == '?')
         {
-            char* scanname = (char*)sc_name[(int)scancode];
-            if(strcmp(scanname, "Lctrl") == 0)
+            int bitshift = get_index_of_control_key(idx);
+            if(bitshift < 0)
+                return;
+
+            if(scancode & RELEASED)
             {
-                shift_down = 0;
-                control_down = !control_down;
-                super_down = 0;
-                alt_down = 0;
-            } 
-            else if(strcmp(scanname, "Lshift") == 0)
+                control_keys &= ~(0x1 << bitshift);
+            } else
             {
-                shift_down = !shift_down;
-                control_down = 0;
-                super_down = 0;
-                alt_down = 0;
+                control_keys |= (0x1 << bitshift);
             }
-            else if(strcmp(scanname, "Rshift") == 0)
-            {
-                shift_down = !shift_down;
-                control_down = 0;
-                super_down = 0;
-                alt_down = 0;
-            }
-            else if(strcmp(scanname, "Lalt") == 0)
-            {
-                shift_down = 0;
-                control_down = 0;
-                super_down = 0;
-                alt_down = !alt_down;
-            }
-        } 
-        else
+        }
+        else if(scancode <= SCANCODE_MAX)
         {
-            if(!control_down && (letter >= 'A' && letter <= 'Z'))
+            if(!(control_keys & (0x1 << 1)) && (letter >= 'A' && letter <= 'Z'))
                 letter += ('a' - 'A'); //If shift is not down, we display a lowercase letter
 
-            /* Remember that kprint only accepts char[] */
+            /* Remember that printf only accepts char[] */
             char str[2] = { letter, '\0' };
             append(key_buffer, letter);
             printf(str);
@@ -127,6 +119,30 @@ static void keyboard_callback(registers_t* regs)
     }
     
     UNUSED(regs);
+}
+
+int get_index_of_control_key(int scancode)
+{
+    char* scanname = (char*)sc_name[(int)scancode];
+    if(strcmp(scanname, "Lctrl") == 0)
+    {
+        return 1;
+    } 
+    else if(strcmp(scanname, "Lshift") == 0)
+    {
+        return 0;
+    }
+    else if(strcmp(scanname, "Rshift") == 0)
+    {
+        return 0;
+    }
+    else if(strcmp(scanname, "Lalt") == 0)
+    {
+        return 3;
+    } else
+    {
+        return -1;
+    }    
 }
 
 void init_keyboard() 

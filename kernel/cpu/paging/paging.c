@@ -123,14 +123,14 @@ void initialise_paging()
 
     nframes = mem_end_page / 0x1000;
     frames = (uint32_t*) kmalloc(INDEX_FROM_BIT(nframes));
-    memory_set((uint8_t*)frames, 0, INDEX_FROM_BIT(nframes));
+    memset((void*)frames, 0, INDEX_FROM_BIT(nframes));
 
     //printf"Number of frames: %i\n, n
     printf("End of memory after allocating %u frames: %x\n", nframes, free_mem_addr);
 
     // Let's make a page directory.
     kernel_directory = (page_directory_t*) kmalloc_a(sizeof(page_directory_t));
-    memory_set((uint8_t*)kernel_directory, 0, sizeof(page_directory_t));
+    memset((void*)kernel_directory, 0, sizeof(page_directory_t));
     current_directory = kernel_directory;
 
     printf("Allocated page directory (size: %x), memory location is: %x\n", sizeof(page_directory_t), current_directory);
@@ -178,6 +178,12 @@ void initialise_paging()
     // Now, enable paging!
     switch_page_directory(kernel_directory);
 
+    //Enable paging (should be done once)
+    uint32_t cr0;
+    asm volatile("mov %%cr0, %0" : "=r"(cr0));
+    cr0 |= 0x80000000; // Set paging bit (bit 31)
+    asm volatile("mov %0, %%cr0" :: "r"(cr0));
+
     kheap = create_heap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
 }
 
@@ -185,10 +191,6 @@ void switch_page_directory(page_directory_t* dir)
 {
     current_directory = dir;
     asm volatile("mov %0, %%cr3" :: "r"(dir->tablesPhysical));
-    uint32_t cr0;
-    asm volatile("mov %%cr0, %0" : "=r"(cr0));
-    cr0 |= 0x80000000; // Enable paging!
-    asm volatile("mov %0, %%cr0" :: "r"(cr0));
 }
 
 page_t* get_page(uint32_t address, int make, page_directory_t* dir)
@@ -205,7 +207,7 @@ page_t* get_page(uint32_t address, int make, page_directory_t* dir)
     {
         uint32_t tmp;
         dir->tables[table_idx] = (page_table_t*) kmalloc_ap(sizeof(page_table_t), &tmp);
-        memory_set((uint8_t*)dir->tables[table_idx], 0, 0x1000);
+        memset((void*)dir->tables[table_idx], 0, 0x1000);
         dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US
         return &dir->tables[table_idx]->pages[address % 1024];
     }

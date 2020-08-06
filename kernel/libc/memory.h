@@ -4,14 +4,22 @@
 #include "stdint.h"
 #include "data_structures/ordered_array.h"
 
+/*
+   C STANDARD LIBRARY CODE FOR THE KERNEL STARTS HERE
+*/
+
+void* memcpy(void* dest, const void* src, size_t n);
+void* memset(void* dest, int c, size_t n);
+
+/*
+   KERNEL HEAP CODE STARTS HERE
+*/
+
 #define KHEAP_START 0xC0000000
 #define KHEAP_INITIAL_SIZE 0x100000
 #define HEAP_INDEX_SIZE 0x20000
 #define HEAP_MAGIC 0x123890AB
 #define HEAP_MIN_SIZE 0x70000
-
-void memory_copy(uint8_t* source, uint8_t* dest, int nbytes);
-void memory_set(uint8_t* dest, uint8_t val, uint32_t len);
 
 uint32_t kmalloc_int(size_t size, int align, uint32_t* phys_addr);
 void kfree(void* ptr);

@@ -12,6 +12,8 @@
 //defined in timer.c
 extern uint32_t tick;
 
+#define SECOND 1000
+
 int get_stack_pointer()
 {
     asm volatile("mov %esp, %eax");
@@ -46,9 +48,9 @@ void kernel_main()
         "Type 'end' to halt the CPU\n> ");
 }
 
-void user_input(char *input) 
+void user_input(char* input) 
 {
-    if(tick > 10000)
+    if(tick >= 200 * SECOND)
     {
         printf("The kernel automatically closes after 200 seconds. Bye!\n");
         asm volatile("hlt");
