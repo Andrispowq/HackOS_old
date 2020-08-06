@@ -3,6 +3,7 @@
 #include "../cpu/isr.h"
 #include "screen.h"
 #include "../libc/string.h"
+#include "../libc/memory.h"
 #include "../libc/function.h"
 #include "../kernel.h"
 
@@ -39,18 +40,28 @@ const char sc_ascii[] = { '?', '?', '1', '2', '3', '4', '5', '6',
         '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?'};
 #else
 //United States layout
-const char *sc_name[] = { "ERROR", "Esc", "1", "2", "3", "4", "5", "6", 
-    "7", "8", "9", "0", "-", "=", "Backspace", "Tab", "Q", "W", "E", 
-        "R", "T", "Y", "U", "I", "O", "P", "[", "]", "Enter", "Lctrl", 
-        "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "`", 
-        "LShift", "\\", "Z", "X", "C", "V", "B", "N", "M", ",", ".", 
-        "/", "RShift", "Keypad *", "LAlt", "Spacebar"};
+const char *sc_name[] = { "ERROR", "Esc", 
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", 
+        "-", "=", "Backspace", "Tab", 
+        "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "Enter", "Lctrl", 
+        "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "`", "LShift", "\\",
+        "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", 
+        "RShift", "Keypad *", "LAlt", "Spacebar", 
+        "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", 
+        "Numlock", "Scroll_lock", "Home", "Up", "Page_Up", "-",
+        "Left", "Empty", "Right", "+", "End", "Down", "Page_Down", "Insert", "Delete"};
 
-const char sc_ascii[] = { '?', '?', '1', '2', '3', '4', '5', '6',     
-    '7', '8', '9', '0', '-', '=', '?', '?', 'Q', 'W', 'E', 'R', 'T', 'Y', 
-        'U', 'I', 'O', 'P', '[', ']', '?', '?', 'A', 'S', 'D', 'F', 'G', 
-        'H', 'J', 'K', 'L', ';', '\'', '`', '?', '\\', 'Z', 'X', 'C', 'V', 
-        'B', 'N', 'M', ',', '.', '/', '?', '?', '?', ' '};
+const char sc_ascii[] = { '?', '?', 
+        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 
+        '-', '=', '?', '?', 
+        'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '?', '?', 
+        'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', '`', '?', '\\', 
+        'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 
+        '?', '?', '?', ' ', 
+        '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 
+        '?', '?', '?', '?', '?', '-',
+        '?', '?', '?', '+', '?', '?', '?', '?', '?'};
+
 #endif
 
 int get_index_of_control_key(int scancode);
@@ -75,7 +86,7 @@ static void keyboard_callback(registers_t* regs)
     {
         printf("\n");
         user_input(key_buffer);
-        key_buffer[0] = '\0';
+        memset(key_buffer, 0, KEY_BUFFER_SIZE + 1);
     } 
     else 
     {
@@ -107,7 +118,7 @@ static void keyboard_callback(registers_t* regs)
         }
         else if(scancode <= SCANCODE_MAX)
         {
-            if(!(control_keys & (0x1 << 1)) && (letter >= 'A' && letter <= 'Z'))
+            if(!(control_keys & 0x1) && (letter >= 'A' && letter <= 'Z'))
                 letter += ('a' - 'A'); //If shift is not down, we display a lowercase letter
 
             /* Remember that printf only accepts char[] */
@@ -128,15 +139,15 @@ int get_index_of_control_key(int scancode)
     {
         return 1;
     } 
-    else if(strcmp(scanname, "Lshift") == 0)
+    else if(strcmp(scanname, "LShift") == 0)
     {
         return 0;
     }
-    else if(strcmp(scanname, "Rshift") == 0)
+    else if(strcmp(scanname, "RShift") == 0)
     {
         return 0;
     }
-    else if(strcmp(scanname, "Lalt") == 0)
+    else if(strcmp(scanname, "LAlt") == 0)
     {
         return 3;
     } else
