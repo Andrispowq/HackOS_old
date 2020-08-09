@@ -11,8 +11,29 @@ int get_offset(int col, int row);
 int get_offset_row(int offset);
 int get_offset_col(int offset);
 
+void scroll_down();
+void scroll_up();
+
+//Used for scrolling up, and down
+char* prev_scr = 0;
+char* next_scr = 0;
+
+//We define this value between 0 and MAX_ROWS * 3, because we have 3 screens in memory
+int curr_abs_row;
+
 void clear_screen() 
 {
+    if(prev_scr != 0)
+    {
+        memset(prev_scr, 0, 2 * MAX_COLS * MAX_ROWS);
+    }
+    if(next_scr != 0)
+    {
+        memset(next_scr, 0, 2 * MAX_COLS * MAX_ROWS);
+    }
+
+    curr_abs_row = 0;
+
     int screen_size = MAX_COLS * MAX_ROWS;
     int i;
     char *screen = (char*)VIDEO_ADDRESS;
@@ -112,6 +133,7 @@ int putchar(char str)
     if(str == '\n')
     {
         cursor = get_offset(0, row + 1);
+        curr_abs_row++;
     }
     else if(str == '\r')
     {
@@ -137,25 +159,87 @@ int putchar(char str)
     /* Check if the offset is over screen size and scroll */
     if (cursor >= MAX_ROWS * MAX_COLS * 2) 
     {
-        int i;
-
-        for (i = 1; i < MAX_ROWS; i++)
-        {
-            memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i - 1)),
-                (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
-                MAX_COLS * 2);
-        }
-
-        /* Blank last line */
-        char *last_line = (char*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1));
-        for (i = 0; i < MAX_COLS * 2; i++) 
-            last_line[i] = 0;
-
+        scroll_down();
         cursor -= 2 * MAX_COLS;
     }
 
     set_cursor_offset(cursor);
     return cursor;
+}
+
+void scroll_down()
+{
+    curr_abs_row++;
+    int i;
+
+    if(prev_scr == 0)
+    {
+        prev_scr = (char*)kmalloc(2 * MAX_COLS * MAX_ROWS);
+    }
+
+    //Copy first line
+    memcpy((void*)(prev_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
+        (const void*)VIDEO_ADDRESS, MAX_COLS * 2);
+
+    //Move everything up
+    for (i = 1; i < MAX_ROWS; i++)
+    {
+        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i - 1)),
+            (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
+            MAX_COLS * 2);
+    }
+
+    //If there was a line after the last one, copy it, if not, make it black
+    if(next_scr != 0)
+    {
+        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1)),
+            (const void*)next_scr + get_offset(0, (MAX_ROWS - (curr_abs_row % MAX_ROWS) - 1)),
+            MAX_COLS * 2);
+    }
+    else
+    {
+        char* last_line = (char*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1));
+        for (i = 0; i < MAX_COLS * 2; i++) 
+            last_line[i] = 0;        
+    }
+}
+
+void scroll_up()
+{
+    curr_abs_row--;
+    int i;
+
+    if(next_scr == 0)
+    {
+        next_scr = (char*)kmalloc(2 * MAX_COLS * MAX_ROWS);
+    }
+
+    //Copy the last line onto the next_scr buffer
+    memcpy((void*)(next_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
+        (const void*)VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1), 
+        MAX_COLS * 2);
+
+    //Move everything down
+    for (i = 0; i < MAX_ROWS - 1; i++)
+    {
+        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i + 1)),
+            (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
+            MAX_COLS * 2);
+    }
+
+    //Copy the last line of the previous screen, if there is one, otherwise, zero it
+    if(prev_scr != 0)
+    {
+        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, 0)),
+            (const void*)(prev_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
+            MAX_COLS * 2);
+    }
+    else
+    {
+        char *last_line = (char*)VIDEO_ADDRESS;
+        for (i = 0; i < MAX_COLS * 2; i++) 
+            last_line[i] = 0;        
+    }
 }
 
 int get_cursor_offset() 

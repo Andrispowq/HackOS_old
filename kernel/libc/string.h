@@ -10,5 +10,6 @@ void backspace(char s[]);
 void append(char s[], char n);
 int strcmp(char s1[], char s2[]);
 int strncmp(char s1[], char s2[], int bytes);
+char* strcpy(char* dst, const char* src);
 
 #endif

@@ -108,3 +108,15 @@ int strncmp(char s1[], char s2[], int bytes)
 
     return s1[i] - s2[i];
 }
+
+char* strcpy(char* dst, const char* src)
+{
+    int length = strlen(dst);
+    int i; 
+    for(i = 0; i < length; i++)
+    {
+        src[i] = dst[i];
+    }
+
+    return src;
+}
