@@ -6,6 +6,7 @@
 #include "drivers/ata/ata.h"
 #include "libc/string.h"
 #include "libc/memory.h"
+#include "filesystem/initrd.h"
 
 #include "console/console.h"
 
@@ -23,6 +24,7 @@ void kernel_main(struct multiboot* mboot_ptr)
     irq_install();
 
     printf("Multiboot header: %x\n", mboot_ptr);
+    //initialise_initrd((uint32_t)mboot_ptr);
 
     printf("Initiating paging! Free memory location: %x\n", kmalloc(4));
     initialise_paging();

@@ -30,7 +30,7 @@ void open_fs(fs_node_t* node, uint8_t read, uint8_t write)
 {
     if (node->open != 0)
     {
-        return node->open(node, read, write);
+        return node->open(node);
     }
 }
 
@@ -59,7 +59,7 @@ fs_node_t* finddir_fs(fs_node_t* node, char* name)
 {
     if(node->finddir != 0 && (node->flags & 0x7) == FS_DIRECTORY)
     {
-        return node->finddir(node, index);
+        return node->finddir(node, name);
     }
     else
     {

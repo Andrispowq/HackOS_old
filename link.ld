@@ -1,13 +1,11 @@
-/* Link.ld -- Linker script for the kernel - ensure everything goes in the */
-/*            Correct place.  */
-/*            Original file taken from Bran's Kernel Development */
-/*            tutorials: http://www.osdever.net/bkerndev/index.php. */
+ENTRY(start)
+OUTPUT_FORMAT(elf32-i386)
+OUTPUT_ARCH(i386:i386)
 
-ENTRY(kernel_main)
 SECTIONS
 {
 
-    .text 0x1000 :
+    .text 0x100000 :
     {
         code = .; _code = .; __code = .;
         *(.text)

@@ -1,4 +1,5 @@
 #include "string.h"
+#include "memory.h"
 
 /**
  * K&R implementation
@@ -48,7 +49,7 @@ void itoa(uint8_t* buf, uint32_t base, uint32_t d)
 void reverse(char s[]) 
 {
     int c, i, j;
-    for (i = 0, j = strlen(s)-1; i < j; i++, j--) 
+    for (i = 0, j = strlen(s) - 1; i < j; i++, j--) 
     {
         c = s[i];
         s[i] = s[j];
@@ -57,7 +58,7 @@ void reverse(char s[])
 }
 
 /* K&R */
-int strlen(char s[]) 
+int strlen(const char s[]) 
 {
     int i = 0;
     while (s[i] != '\0') 
@@ -115,8 +116,42 @@ char* strcpy(char* dst, const char* src)
     int i; 
     for(i = 0; i < length; i++)
     {
-        src[i] = dst[i];
+        dst[i] = src[i];
     }
 
-    return src;
+    return dst;
+}
+
+char** split(const char* str, char delim, int* count)
+{
+    int size = strlen(str);
+
+    int cnt = 0;
+    for(int i = 0; i < size; i++)
+    {
+        if(str[i] == delim)
+        {
+            cnt++;
+        }
+    }
+
+    //Allocate the pointers, set the count
+    char** ptr = (char**) kmalloc(cnt * sizeof(char*));
+    *count = cnt;
+
+    int idx = 0;
+    int last_idx = 0;
+    for(int i = 0; i < size; i++)
+    {
+        if(str[i] == delim)
+        {
+            int sz = i - last_idx;
+            ptr[idx] = (char*) kmalloc(sz);
+            memcpy(&ptr[idx], &str[last_idx], sz);
+            last_idx = idx;
+            idx++;
+        }
+    }
+
+    return ptr;
 }

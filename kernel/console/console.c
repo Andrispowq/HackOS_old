@@ -75,9 +75,9 @@ void command_mode(char* input)
             char* msg = &input[6];
 
             //Check if the user tries to get the value of an existing variable:
-            if(check_short_command(msg, "tick", 4))
+            if(check_short_command(msg, "time", 4))
             {
-                printf("tick = %dms", tick);
+                printf("Time elapsed since startup: %dms", tick);
             } 
             else if(check_short_command(msg, "stack", 5))
             {
@@ -121,9 +121,20 @@ void calculator_mode(char* input)
     else if(check_short_command(input, "cotan", 5))
     {
         printf("Sorry, the 'cotan' function is not yet supported!");
-    } else
+    } 
+    else
     {
-        printf("Sorry, the calculator is not yet implemented!");    
+        int cnt;
+        char** com = split(input, ' ', &cnt);
+
+        printf("You said: \n");
+        
+        for(int i = 0; i < cnt; i++)
+        {
+            printf("%s ", com[i]);
+        }
+
+        //printf("Sorry, the calculator is not yet implemented!");    
     }
 
     state = CALCULATOR_MODE;

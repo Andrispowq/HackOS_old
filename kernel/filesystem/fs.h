@@ -12,6 +12,9 @@
 #define FS_SYMLINK     0x06
 #define FS_MOUNTPOINT  0x08 // Is the file an active mountpoint?
 
+struct dirent;
+struct fs_node;
+
 typedef uint32_t (*read_type_t)(struct fs_node*, uint32_t, uint32_t, uint8_t*);
 typedef uint32_t (*write_type_t)(struct fs_node*, uint32_t, uint32_t, uint8_t*);
 typedef void (*open_type_t)(struct fs_node*);

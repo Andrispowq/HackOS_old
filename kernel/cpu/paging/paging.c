@@ -159,7 +159,7 @@ void initialise_paging()
     // in memory but can't be allocated there for now, so we have to add that offset here
     // the 0x1000 offset is the one plus page for additional data of the heap
     i = 0;
-    while (i < free_mem_addr + 0x101000)
+    while (i < free_mem_addr + 0x1000)
     {
         // Kernel code is readable but not writeable from userspace.
         alloc_frame(get_page(i, 1, kernel_directory), 0, 0);
