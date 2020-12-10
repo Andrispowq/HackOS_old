@@ -7,6 +7,7 @@
 #include "libc/string.h"
 #include "libc/memory.h"
 #include "filesystem/initrd.h"
+#include "filesystem/multiboot.h"
 
 #include "console/console.h"
 

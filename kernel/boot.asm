@@ -1,40 +1,51 @@
-bits 32 
+section .multiboot_header
 
-MBOOT_PAGE_ALIGN    equ 1<<0    ; Load kernel and modules on a page boundary
-MBOOT_MEM_INFO      equ 1<<1    ; Provide your kernel with memory info
-MBOOT_HEADER_MAGIC  equ 0x1BADB002 ; Multiboot Magic value
-; NOTE: We do not use MBOOT_AOUT_KLUDGE. It means that GRUB does not
-; pass us a symbol table.
-MBOOT_HEADER_FLAGS  equ MBOOT_PAGE_ALIGN | MBOOT_MEM_INFO
-MBOOT_CHECKSUM      equ -(MBOOT_HEADER_MAGIC + MBOOT_HEADER_FLAGS)
+MBOOT_HEADER_FLAGS  equ 0x00000007
+MBOOT_HEADER_MAGIC  equ 0x1BADB002
+MBOOT_CHECKSUM      equ -(MBOOT_HEADER_MAGIC + MBOOT_HEADER_FLAGS) & 0xFFFFFFFF
 
-global mboot                    ; Make 'mboot' accessible from C.
+global multiboot_header         ; Make 'multiboot_header' accessible from C.
 extern code                     ; Start of the '.text' section.
 extern bss                      ; Start of the .bss section.
 extern end                      ; End of the last loadable section.
 
-mboot:
+global start                    ; Kernel entry point.
+extern kernel_main              ; This is the entry point of our C code
+
+align 16, db 0
+multiboot_header:
     dd  MBOOT_HEADER_MAGIC      ; GRUB will search for this value on each
                                 ; 4-byte boundary in your kernel file
     dd  MBOOT_HEADER_FLAGS      ; How GRUB should load your file / settings
     dd  MBOOT_CHECKSUM          ; To ensure that the above values are correct
+
+    dd  0,0,0,0,0               ; Aout kludge (unused)
     
-    dd  mboot                   ; Location of this descriptor
-    dd  code                    ; Start of kernel '.text' (code) section.
-    dd  bss                     ; End of kernel '.data' section.
-    dd  end                     ; End of kernel.
-    dd  start                   ; Kernel entry point (initial EIP).
+    dd  1                       ; Linear graphics
+    dd  0                       ; Preferred width
+    dd  0                       ; Preferred height
+    dd  32                      ; Preferred pixel depth
 
-global start                  ; Kernel entry point.
-; extern kernel_main              ; This is the entry point of our C code
+bits 32
+section .text
 
+align 4
 start:
+    mov     esp, default_stack_pointer
+
     ; Load multiboot information:
+    push    esp
+    push    eax
     push    ebx
 
     ; Execute the kernel:
-    cli                         ; Disable interrupts.
-    ;call kernel_main            ; call our main() function.
-    jmp $                       ; Enter an infinite loop, to stop the processor
-                                ; executing whatever rubbish is in the memory
-                                ; after our kernel!
+    call    kernel_main
+    cli
+    jmp     $ 
+
+KERNEL_STACK_SIZE   equ 8192 
+
+section .bss
+align 4
+resb KERNEL_STACK_SIZE
+default_stack_pointer:

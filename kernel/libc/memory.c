@@ -73,22 +73,22 @@ void kfree(void* ptr)
     }
 }
 
-uint32_t kmalloc_a(uint32_t size)
+uint32_t kmalloc_a(size_t size)
 {
     return kmalloc_int(size, 1, 0);
 }
 
-uint32_t kmalloc_p(uint32_t size, uint32_t* phys)
+uint32_t kmalloc_p(size_t size, uint32_t* phys)
 {
     return kmalloc_int(size, 0, phys);
 }
 
-uint32_t kmalloc_ap(uint32_t size, uint32_t* phys)
+uint32_t kmalloc_ap(size_t size, uint32_t* phys)
 {
     return kmalloc_int(size, 1, phys);
 }
 
-uint32_t kmalloc(uint32_t size)
+uint32_t kmalloc(size_t size)
 {
     return kmalloc_int(size, 0, 0);
 }

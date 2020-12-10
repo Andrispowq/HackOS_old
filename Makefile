@@ -3,7 +3,7 @@ HEADERS = $(wildcard kernel/*.h kernel/filesystem/*.h kernel/drivers/*.h kernel/
 OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o} 
 
 # -g: Use debugging symbols in gcc
-CFLAGS = -ffreestanding -m32 -fno-pic -c -g
+CFLAGS = -m32 -ffreestanding -fno-pic -c -g
 LDFLAGS = -m elf_i386 -Tlink.ld
 
 # First rule is run by default
@@ -22,30 +22,30 @@ os-image.iso: kernel.bin
 	echo '  multiboot /boot/kernel.bin'    	 >> iso/boot/grub/grub.cfg
 	echo '  boot'                            >> iso/boot/grub/grub.cfg
 	echo '}'                                 >> iso/boot/grub/grub.cfg
-	grub-mkrescue --output=os-image.iso iso
+	grub-mkrescue --output=os-image.iso iso/
 	rm -rf iso
 
 kernel.bin: ${OBJ}
-	ld ${LDFLAGS} -o $@ $^ --oformat binary
+	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o $@ $^ --oformat binary
 	
 kernel.tmp: ${OBJ}
-	ld ${LDFLAGS} -o $@ $^
+	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o $@ $^
 
 kernel.elf: ${OBJ}
-	ld ${LDFLAGS} -o $@ $^ 
+	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o $@ $^ 
 
 run: os-image.iso
-	qemu-system-x86_64 -drive format=raw,media=cdrom,file=os-image.iso
+	qemu-system-i386 -cdrom os-image.iso
 
 # Open the connection to qemu and load our kernel-object file with symbols
 debug: os-image.iso kernel.elf
-	qemu-system-x86_64 -s -hda os-image.iso -d guest_errors,cpu_reset &
+	qemu-system-x86_64 -s -cdrom os-image.iso -d guest_errors,cpu_reset &
 	gdb -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
 # Generic rules for wildcards
 # To make an object, always compile from its .c
 %.o: %.c ${HEADERS}
-	gcc ${CFLAGS} $< -o $@
+	$$HOME/opt/cross/bin/i686-elf-gcc ${CFLAGS} $< -o $@
 
 %.o: %.asm
 	nasm $< -f elf -o $@
