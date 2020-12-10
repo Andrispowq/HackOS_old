@@ -3,7 +3,7 @@ HEADERS = $(wildcard kernel/*.h kernel/filesystem/*.h kernel/drivers/*.h kernel/
 OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o} 
 
 # -g: Use debugging symbols in gcc
-CFLAGS = -m32 -ffreestanding -fno-pic -c -g
+CFLAGS = -ffreestanding -fno-pic -c -g
 LDFLAGS = -m elf_i386 -Tlink.ld
 
 # First rule is run by default
@@ -26,7 +26,8 @@ os-image.iso: kernel.bin
 	rm -rf iso
 
 kernel.bin: ${OBJ}
-	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o $@ $^ --oformat binary
+	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o kernel.elf $^
+	objcopy --strip-debug kernel.elf $@
 	
 kernel.tmp: ${OBJ}
 	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o $@ $^

@@ -74,6 +74,8 @@ static void keyboard_callback(registers_t* regs)
     //if (scancode > SCANCODE_MAX) 
     //    return;
 
+    printf("hello");
+
     if (scancode == BACKSPACE) 
     {
         if(strlen(key_buffer) == 0)
@@ -158,5 +160,14 @@ int get_index_of_control_key(int scancode)
 
 void init_keyboard() 
 {
+    while(port_byte_in(0x64) & 0x1)
+        port_byte_in(0x60);
+    port_byte_out(0x64, 0xAE); // activate interrupts
+    port_byte_out(0x64, 0x20); // command 0x20 = read controller command byte
+    uint8_t status = (port_byte_in(0x64) | 1) & ~0x10;
+    port_byte_out(0x64, 0x60); // command 0x60 = set controller command byte
+    port_byte_out(0x60, status);
+    port_byte_out(0x60, 0xf4);
+
     register_interrupt_handler(IRQ1, keyboard_callback);
 }

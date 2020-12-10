@@ -16,7 +16,7 @@ extern uint32_t tick;
 
 #define SECOND 1000
 
-void kernel_main(struct multiboot* mboot_ptr)
+void kernel_main(multiboot_info_t* mboot_ptr)
 {
     clear_screen();
 
@@ -24,7 +24,8 @@ void kernel_main(struct multiboot* mboot_ptr)
     isr_install();
     irq_install();
 
-    printf("Multiboot header: %x\n", mboot_ptr);
+    printf("Number of multiboot modules: %d\n", mboot_ptr->mods_count);
+    printf("Address of multiboot modules: %x\n", mboot_ptr->mods_addr);
     //initialise_initrd((uint32_t)mboot_ptr);
 
     printf("Initiating paging! Free memory location: %x\n", kmalloc(4));

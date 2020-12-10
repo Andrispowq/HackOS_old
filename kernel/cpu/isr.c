@@ -75,7 +75,8 @@ void isr_install()
     set_idt_gate(IRQ14, (uint32_t)irq14);
     set_idt_gate(IRQ15, (uint32_t)irq15);
 
-    set_idt(); // Load with ASM
+    //Load the IDT in assembly
+    set_idt();
 }
 
 /* To print the message which defines every exception */
@@ -127,7 +128,7 @@ void isr_handler(registers_t* r)
     }
     else
     {
-        printf("Recieved interrupt without a handler: %u\n", r->int_no);
+        printf("Recieved interrupt without a handler: %d\n", r->int_no);
     }
 }
 
@@ -157,8 +158,7 @@ void irq_install()
 {
     /* Enable interrupts */
     asm volatile("sti");
-    /* IRQ0: timer */
+
     init_timer(1000); //1 tick per 1 ms
-    /* IRQ1: keyboard */
     init_keyboard();
 }
