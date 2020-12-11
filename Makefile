@@ -13,17 +13,23 @@ os-image.iso: kernel.bin
 	rm -rf iso
 	mkdir iso
 	mkdir iso/boot
+	mkdir iso/boot/modules
 	mkdir iso/boot/grub
 	cp kernel.bin iso/boot/kernel.bin
+	cp initrd.img iso/boot/modules/initrd.img
 	echo 'set timeout=0'                      > iso/boot/grub/grub.cfg
 	echo 'set default=0'                     >> iso/boot/grub/grub.cfg
 	echo ''                                  >> iso/boot/grub/grub.cfg
 	echo 'menuentry "HackOS" {'  			 >> iso/boot/grub/grub.cfg
 	echo '  multiboot /boot/kernel.bin'    	 >> iso/boot/grub/grub.cfg
+	echo '  module /boot/modules/initrd.img' >> iso/boot/grub/grub.cfg
 	echo '  boot'                            >> iso/boot/grub/grub.cfg
 	echo '}'                                 >> iso/boot/grub/grub.cfg
 	grub-mkrescue --output=os-image.iso iso/
 	rm -rf iso
+
+install: kernel.bin
+	sudo cp $< /boot/mykernel.bin
 
 kernel.bin: ${OBJ}
 	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o kernel.elf $^

@@ -14,6 +14,7 @@
 
 //defined in timer.c
 extern uint32_t tick;
+extern uint32_t free_mem_addr;
 
 #define SECOND 1000
 
@@ -25,15 +26,44 @@ void kernel_main(multiboot_info_t* mboot_ptr)
     isr_install();
     irq_install();
 
-    printf("Number of multiboot modules: %d\n", mboot_ptr->mods_count);
-    printf("Address of multiboot modules: %x\n", mboot_ptr->mods_addr);
-    //initialise_initrd((uint32_t)mboot_ptr);
+    uint32_t initrd_location = *((uint32_t*)mboot_ptr->mods_addr);
+    uint32_t initrd_end = *(uint32_t*)(mboot_ptr->mods_addr + 4);
+
+    printf("Free: %x\n", free_mem_addr);
+    free_mem_addr = initrd_end;
+    printf("Location: %x, count: %d\n", initrd_location, mboot_ptr->mods_count);
 
     printf("Initiating paging! Free memory location: %x\n", kmalloc(4));
     initialise_paging();
     void* ptr = (void*) kmalloc(8);
     printf("Initialised paging! Free memory location: %x\n", ptr);
-    kfree(ptr);
+    kfree(ptr);    
+
+    fs_root = initialise_initrd(initrd_location);
+    
+    int i = 0;
+    struct dirent* node = 0;
+    while ((node = readdir_fs(fs_root, i)) != 0)
+    {
+        printf("Found file %s\n", node->name);
+        fs_node_t* fsnode = finddir_fs(fs_root, node->name);
+
+        if ((fsnode->flags & 0x7) == FS_DIRECTORY)
+        {
+            printf("\t(directory)\n");
+        }
+        else
+        {
+            printf("\t contents: \"");
+            char buf[256];
+            memset(buf, 0, 256 / sizeof(int));
+            uint32_t size = read_fs(fsnode, 0, 256, buf);
+            printf(buf);
+
+            printf("\"\n");
+        }
+        i++;
+    }
 
     printf("Type something, it will go through the kernel\n"
         "Type 'help' for help!\n> ");

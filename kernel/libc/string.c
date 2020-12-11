@@ -112,7 +112,7 @@ int strncmp(char s1[], char s2[], int bytes)
 
 char* strcpy(char* dst, const char* src)
 {
-    int length = strlen(dst);
+    int length = strlen(src);
     int i; 
     for(i = 0; i < length; i++)
     {

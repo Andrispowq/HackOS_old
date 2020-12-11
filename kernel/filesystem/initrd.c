@@ -19,9 +19,9 @@ static uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uin
     {
         return 0;
     }
-    if (offset+size > header.length)
+    if (offset + size > header.length)
     {
-        size = header.length-offset;
+        size = header.length - offset;
     }
 
     memcpy((void*)buffer, (const void*) (header.offset + offset), size);
@@ -45,12 +45,12 @@ static dirent_t* initrd_readdir(fs_node_t* node, uint32_t index)
     }
 
     strcpy(dirent.name, root_nodes[index - 1].name);
-    dirent.name[strlen(root_nodes[index - 1].name)] = 0; // Make sure the string is NULL-terminated.
+    dirent.name[strlen(root_nodes[index - 1].name)] = '\0';
     dirent.ino = root_nodes[index - 1].inode;
     return &dirent;
 }
 
-static fs_node_t *initrd_finddir(fs_node_t *node, char *name)
+static fs_node_t* initrd_finddir(fs_node_t* node, char* name)
 {
     if (node == initrd_root && !strcmp(name, "dev"))
     {
@@ -69,7 +69,7 @@ static fs_node_t *initrd_finddir(fs_node_t *node, char *name)
     return 0;
 }
 
-fs_node_t *initialise_initrd(uint32_t location)
+fs_node_t* initialise_initrd(uint32_t location)
 {
     // Initialise the main and file header pointers and populate the root directory.
     initrd_header = (initrd_header_t*) location;
@@ -107,7 +107,7 @@ fs_node_t *initialise_initrd(uint32_t location)
     nroot_nodes = initrd_header->nfiles;
 
     int i;
-    for (i = 0; i < initrd_header->nfiles; i++)
+    for (i = 0; i < nroot_nodes; i++)
     {
         // Edit the file's header - currently it holds the file offset
         // relative to the start of the ramdisk. We want it relative to the start
@@ -126,7 +126,7 @@ fs_node_t *initialise_initrd(uint32_t location)
         root_nodes[i].open = 0;
         root_nodes[i].close = 0;
         root_nodes[i].impl = 0;
-    } 
+    }
 
     return initrd_root;
 }
