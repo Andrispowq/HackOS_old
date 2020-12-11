@@ -39,8 +39,8 @@ start:
     push    ebx
 
     ; Execute the kernel:
-    call    kernel_main
     cli
+    call    kernel_main
     jmp     $ 
 
 KERNEL_STACK_SIZE   equ 8192 

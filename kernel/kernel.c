@@ -3,6 +3,7 @@
 #include "cpu/gdt.h"
 #include "cpu/paging/paging.h"
 #include "drivers/screen.h"
+#include "cpu/ports.h"
 #include "drivers/ata/ata.h"
 #include "libc/string.h"
 #include "libc/memory.h"
@@ -49,8 +50,38 @@ void user_input(char* input)
     if (strcmp(input, "shutdown") == 0) 
     {
         printf("Stopping the CPU. Bye!\n");
-        asm volatile("hlt"); //This requires the kernel, the other commands don't
-    } else
+
+        //Bochs/older QEMU versions
+        port_word_out(0xB004, 0x2000);
+        //Newer QEMU versions
+        port_word_out(0x0604, 0x2000);
+        //VirtualBox
+        port_word_out(0x4004, 0x3400);
+    }
+    else if (strcmp(input, "restart") == 0) 
+    {
+        printf("Restarting the CPU. Bye!\n");
+
+        //Flush the IRQ1 buffer
+        unsigned temp;
+        do
+        {
+           temp = (unsigned)port_byte_in(0x64);
+           if((temp & 0x01) != 0)
+           {
+              (void)port_byte_in(0x60);
+              continue;
+           }
+        } 
+        while((temp & 0x02) != 0);
+        
+        //Restart
+        port_byte_out(0x70, 0x8F);
+        port_byte_out(0x71, 0x00);
+        port_byte_out(0x70, 0x00);
+        port_byte_out(0x92, port_byte_in(0x92) | 0x1);
+    }
+    else
     {
         console_command(input);   
     }

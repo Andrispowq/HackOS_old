@@ -4,5 +4,5 @@ extern kernel_main ;load_kernel
 global _start
 
 _start:
-	call kernel_main ;load_kernel
-	jmp $
+	call 	kernel_main ;load_kernel
+	jmp 	$
