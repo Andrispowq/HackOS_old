@@ -1,6 +1,6 @@
-C_SOURCES = $(wildcard kernel/*.c kernel/filesystem/*.c kernel/drivers/*.c kernel/drivers/ata/*.c kernel/cpu/*.c kernel/libc/*.c kernel/libc/data_structures/*.c kernel/console/*.c kernel/cpu/paging/*.c)
-HEADERS = $(wildcard kernel/*.h kernel/filesystem/*.h kernel/drivers/*.h kernel/drivers/ata/*.h kernel/cpu/*.h kernel/libc/*.h kernel/libc/data_structures/*.h kernel/console/*.h kernel/cpu/paging/*.h)
-OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o} 
+C_SOURCES = $(wildcard kernel/*.c kernel/filesystem/*.c kernel/drivers/*.c kernel/drivers/ata/*.c kernel/cpu/*.c kernel/cpu/tasking/*.c kernel/libc/*.c kernel/libc/data_structures/*.c kernel/console/*.c kernel/cpu/paging/*.c)
+HEADERS = $(wildcard kernel/*.h kernel/filesystem/*.h kernel/drivers/*.h kernel/drivers/ata/*.h kernel/cpu/*.h kernel/cpu/tasking/*.h kernel/libc/*.h kernel/libc/data_structures/*.h kernel/console/*.h kernel/cpu/paging/*.h)
+OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o kernel/cpu/tasking/tasking_routines.o } 
 
 # -g: Use debugging symbols in gcc
 CFLAGS = -ffreestanding -fno-pic -c -g
@@ -29,7 +29,7 @@ os-image.iso: kernel.bin
 	rm -rf iso
 
 install: kernel.bin
-	sudo cp $< /boot/mykernel.bin
+	sudo cp $< /boot/kernel.bin
 
 kernel.bin: ${OBJ}
 	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o kernel.elf $^
@@ -64,4 +64,4 @@ debug: os-image.iso kernel.elf
 clean:
 	rm -rf iso
 	rm -rf *.iso *.bin *.dis *.o os-image.bin *.elf *.tmp
-	rm -rf kernel/*.o kernel/filesystem/*.o boot/*.bin kernel/drivers/*.o kernel/drivers/ata/*.o kernel/boot/*.o kernel/cpu/*.o kernel/libc/*.o kernel/libc/data_structures/*.o kernel/console/*.o kernel/cpu/paging/*.o kernel/second_stage_loader/*.o
+	rm -rf kernel/*.o kernel/filesystem/*.o boot/*.bin kernel/drivers/*.o kernel/drivers/ata/*.o kernel/boot/*.o kernel/cpu/*.o kernel/libc/*.o kernel/libc/data_structures/*.o kernel/console/*.o kernel/cpu/paging/*.o kernel/cpu/tasking/*.o kernel/second_stage_loader/*.o
