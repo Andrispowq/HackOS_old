@@ -28,8 +28,9 @@ os-image.iso: kernel.bin
 	grub-mkrescue --output=os-image.iso iso/
 	rm -rf iso
 
-install: kernel.bin
+install: kernel.bin initrd.img
 	sudo cp $< /boot/kernel.bin
+	sudo cp $< /boot/modules/initrd.img
 
 kernel.bin: ${OBJ}
 	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o kernel.elf $^
