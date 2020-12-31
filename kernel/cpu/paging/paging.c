@@ -125,15 +125,10 @@ void initialise_paging()
     frames = (uint32_t*) kmalloc(INDEX_FROM_BIT(nframes));
     memset((void*)frames, 0, INDEX_FROM_BIT(nframes));
 
-    //printf"Number of frames: %i\n, n
-    printf("End of memory after allocating %u frames: %x\n", nframes, free_mem_addr);
-
     // Let's make a page directory.
     kernel_directory = (page_directory_t*) kmalloc_a(sizeof(page_directory_t));
     memset((void*)kernel_directory, 0, sizeof(page_directory_t));
     current_directory = kernel_directory;
-
-    printf("Allocated page directory (size: %x), memory location is: %x\n", sizeof(page_directory_t), current_directory);
 
     // Map some pages in the kernel heap area.
     // Here we call get_page but not alloc_frame. This causes page_table_t's 

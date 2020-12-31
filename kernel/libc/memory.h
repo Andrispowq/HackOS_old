@@ -61,7 +61,7 @@ typedef struct
 heap_t* create_heap(uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t readonly);
 
 /**
-  Allocates a contiguous region of memory 'size' in size. If page_align==1, it creates that block starting
+  Allocates a contiguous region of memory 'size' in size. If page_align == 1, it creates that block starting
   on a page boundary.
 **/
 void* alloc(uint32_t size, uint8_t page_align, heap_t* heap);

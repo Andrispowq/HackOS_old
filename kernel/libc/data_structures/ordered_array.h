@@ -17,11 +17,11 @@ typedef int8_t(*lessthan_predicate_t)(type_t, type_t);
 
 typedef struct
 {
-   type_t* array;
-   uint32_t size;
-   uint32_t max_size;
+    type_t* array;
+    uint32_t size;
+    uint32_t max_size;
 
-   lessthan_predicate_t less_than;
+   	lessthan_predicate_t less_than;
 } ordered_array_t;
 
 /**

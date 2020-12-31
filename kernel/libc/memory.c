@@ -7,10 +7,41 @@ extern page_t* get_page(uint32_t address, int make, page_directory_t* dir);
 
 void* memcpy(void* dest, const void* src, size_t n)
 {
-    int i;
-    for (i = 0; i < n; i++) 
+    if(n <= 0)
+        return dest;
+
+    size_t sz = n;
+    int i = 0;
+
+    for (i; i < n; i++)
     {
-        *((uint8_t*)dest + i) = *((uint8_t*)src + i);
+        if((sz % 8) == 0)
+        {
+            *((uint64_t*)((uint8_t*)dest + i)) = *((uint64_t*)((uint8_t*)src + i));
+            
+            sz -= 8;
+            i += 7;
+        }
+        else if((sz % 4) == 0)
+        {
+            *((uint32_t*)((uint8_t*)dest + i)) = *((uint32_t*)((uint8_t*)src + i));
+
+            sz -= 4;
+            i += 3;
+        }
+        else if((sz % 2) == 0)
+        {
+            *((uint16_t*)((uint8_t*)dest + i)) = *((uint16_t*)((uint8_t*)src + i));
+
+            sz -= 2;
+            i += 1;
+        }
+        else
+        {
+            *((uint8_t*)dest + i) = *((uint8_t*)src + i);
+
+            sz -= 1;
+        }
     }
 
     return dest;
@@ -18,10 +49,40 @@ void* memcpy(void* dest, const void* src, size_t n)
 
 void* memset(void* dest, int c, size_t n) 
 {
-    uint8_t* temp = (uint8_t*) dest;
-    for (; n != 0; n--) 
+    if(n <= 0)
+        return dest;
+
+    size_t sz = n;
+    int i = 0;
+
+    for (i; i < n; i++)
     {
-        *temp++ = c;
+        if((sz % 8) == 0)
+        {
+            *((uint64_t*)((uint8_t*)dest + i)) = (uint64_t)c;
+
+            sz -= 8;
+            i += 7;
+        }
+        else if((sz % 4) == 0)
+        {
+            *((uint32_t*)((uint8_t*)dest + i)) = (uint32_t)c;
+
+            sz -= 4;
+            i += 3;
+        }
+        else if((sz % 2) == 0)
+        {
+            *((uint16_t*)((uint8_t*)dest + i)) = (uint16_t)c;
+
+            sz -= 2;
+            i += 1;
+        }
+        else
+        {
+            *((uint8_t*)dest + i) = (uint8_t)c;
+            sz -= 1;
+        }
     }
 
     return dest;
@@ -347,7 +408,7 @@ void* alloc(uint32_t size, uint8_t page_align, heap_t* heap)
             hole_footer->magic = HEAP_MAGIC;
             hole_footer->header = hole_header;
         }
-        // Put the new hole in the index;
+        
         insert_ordered_array((void*)hole_header, &heap->index);
     }
 

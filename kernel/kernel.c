@@ -22,24 +22,29 @@ void kernel_main(multiboot_info_t* mboot_ptr)
 {
     clear_screen();
 
+    printf("Stage 1 completed: landed in the kernel_main, and cleared the screen!\n");    
+
     gdt_install();
     isr_install();
     irq_install();
 
+    printf("Stage 2 completed: setup the interrupts\n");
+
     uint32_t initrd_location = *((uint32_t*)mboot_ptr->mods_addr);
     uint32_t initrd_end = *(uint32_t*)(mboot_ptr->mods_addr + 4);
 
-    printf("Free: %x\n", free_mem_addr);
+    printf("Free memory start address: %x, end of initrd: %x\n", free_mem_addr, initrd_end);
     free_mem_addr = initrd_end;
-    printf("Location: %x, count: %d\n", initrd_location, mboot_ptr->mods_count);
+    printf("Modules info: location: %x, count: %d\n", mboot_ptr->mods_addr, mboot_ptr->mods_count);
 
-    printf("Initiating paging! Free memory location: %x\n", kmalloc(4));
     initialise_paging();
     void* ptr = (void*) kmalloc(8);
-    printf("Initialised paging! Free memory location: %x\n", ptr);
-    kfree(ptr);    
+    printf("Stage 3 completed: initialised paging, free memory location: %x\n", ptr);
+    kfree(ptr);
 
     fs_root = initialise_initrd(initrd_location);
+    printf("Stage 4 completed: initialised the initial ramdisk\n", ptr);
+    printf("Listing the contents of the initrd:\n");
     
     int i = 0;
     struct dirent* node = 0;
@@ -64,6 +69,8 @@ void kernel_main(multiboot_info_t* mboot_ptr)
         }
         i++;
     }
+
+    asm volatile("sti");
 
     printf("Type something, it will go through the kernel\n"
         "Type 'help' for help!\n> ");

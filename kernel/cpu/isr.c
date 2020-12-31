@@ -157,7 +157,6 @@ void irq_handler(registers_t* r)
 void irq_install() 
 {
     /* Enable interrupts */
-    asm volatile("sti");
 
     init_timer(1000); //1 tick per 1 ms
     init_keyboard();

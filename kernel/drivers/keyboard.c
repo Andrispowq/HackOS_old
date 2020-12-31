@@ -150,7 +150,8 @@ int get_index_of_control_key(int scancode)
     else if(strcmp(scanname, "LAlt") == 0)
     {
         return 3;
-    } else
+    } 
+    else
     {
         return -1;
     }

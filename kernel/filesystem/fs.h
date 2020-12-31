@@ -24,8 +24,8 @@ typedef struct fs_node* (*finddir_type_t)(struct fs_node*, char* name);
 
 typedef struct dirent
 {
-  char name[128]; // Filename.
-  uint32_t ino;     // Inode number. Required by POSIX.
+  	char name[128]; // Filename.
+  	uint32_t ino;     // Inode number. Required by POSIX.
 } dirent_t; 
 
 typedef struct fs_node
