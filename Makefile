@@ -1,6 +1,6 @@
 C_SOURCES = $(wildcard kernel/*.c kernel/filesystem/*.c kernel/drivers/*.c kernel/drivers/ata/*.c kernel/cpu/*.c kernel/cpu/tasking/*.c kernel/libc/*.c kernel/libc/data_structures/*.c kernel/console/*.c kernel/cpu/paging/*.c)
 HEADERS = $(wildcard kernel/*.h kernel/filesystem/*.h kernel/drivers/*.h kernel/drivers/ata/*.h kernel/cpu/*.h kernel/cpu/tasking/*.h kernel/libc/*.h kernel/libc/data_structures/*.h kernel/console/*.h kernel/cpu/paging/*.h)
-OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o kernel/cpu/tasking/tasking_routines.o } 
+OBJ = ${C_SOURCES:.c=.o kernel/boot.o kernel/cpu/interrupts.o kernel/cpu/gdt_flush.o kernel/cpu/process.o } 
 
 # -g: Use debugging symbols in gcc
 CFLAGS = -ffreestanding -fno-pic -c -g
@@ -29,8 +29,8 @@ os-image.iso: kernel.bin
 	rm -rf iso
 
 install: kernel.bin initrd.img
-	sudo cp $< /boot/kernel.bin
-	sudo cp $< /boot/modules/initrd.img
+	sudo cp kernel.bin /boot/kernel.bin
+	sudo cp initrd.img /boot/modules/initrd.img
 
 kernel.bin: ${OBJ}
 	$$HOME/opt/cross/bin/i686-elf-ld ${LDFLAGS} -o kernel.elf $^
