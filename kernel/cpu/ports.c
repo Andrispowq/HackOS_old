@@ -1,9 +1,6 @@
 #include "ports.h"
 
-/**
- * Read a byte from the specified port
- */
-uint8_t port_byte_in(uint16_t port) 
+uint8_t inb(uint16_t port) 
 {
     uint8_t result;
     /* Inline assembler syntax
@@ -18,7 +15,21 @@ uint8_t port_byte_in(uint16_t port)
     return result;
 }
 
-void port_byte_out(uint16_t port, uint8_t data) 
+uint16_t inw(uint16_t port) 
+{
+    uint16_t result;
+    asm("in %%dx, %%ax" : "=a" (result) : "d" (port));
+    return result;
+}
+
+uint32_t inl(uint32_t port) 
+{
+    uint32_t result;
+    asm volatile("inl %%dx, %%eax" : "=a" (result) : "d"(port));
+    return result;
+}
+
+void outb(uint16_t port, uint8_t data) 
 {
     /* Notice how here both registers are mapped to C variables and
      * nothing is returned, thus, no equals '=' in the asm syntax 
@@ -28,26 +39,12 @@ void port_byte_out(uint16_t port, uint8_t data)
     asm("out %%al, %%dx" : : "a" (data), "d" (port));
 }
 
-uint16_t port_word_in(uint16_t port) 
-{
-    uint16_t result;
-    asm("in %%dx, %%ax" : "=a" (result) : "d" (port));
-    return result;
-}
-
-void port_word_out(uint16_t port, uint16_t data) 
+void outw(uint16_t port, uint16_t data) 
 {
     asm("out %%ax, %%dx" : : "a" (data), "d" (port));
 }
 
-uint32_t port_long_in(uint32_t port) 
-{
-    uint32_t result;
-    asm volatile("inl %%dx, %%eax" : "=a" (result) : "d"(port));
-    return result;
-}
-
-void port_long_out(uint32_t port, uint32_t value) 
+void outl(uint32_t port, uint32_t value) 
 {
 	asm volatile("outl %%eax, %%dx" :: "d" (port), "a" (value));
 }

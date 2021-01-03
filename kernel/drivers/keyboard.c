@@ -69,7 +69,7 @@ int get_index_of_control_key(int scancode);
 static void keyboard_callback(registers_t* regs) 
 {
     //the PIC leaves us the scancode in port 0x60 
-    uint8_t scancode = port_byte_in(0x60);
+    uint8_t scancode = inb(0x60);
 
     //if (scancode > SCANCODE_MAX) 
     //    return;

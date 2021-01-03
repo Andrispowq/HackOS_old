@@ -88,11 +88,11 @@ void user_input(char* input)
         printf("Stopping the CPU. Bye!\n");
 
         //Bochs/older QEMU versions
-        port_word_out(0xB004, 0x2000);
+        outw(0xB004, 0x2000);
         //Newer QEMU versions
-        port_word_out(0x0604, 0x2000);
+        outw(0x0604, 0x2000);
         //VirtualBox
-        port_word_out(0x4004, 0x3400);
+        outw(0x4004, 0x3400);
     }
     else if (strcmp(input, "restart") == 0) 
     {
@@ -102,20 +102,20 @@ void user_input(char* input)
         unsigned temp;
         do
         {
-           temp = (unsigned)port_byte_in(0x64);
+           temp = (unsigned)inb(0x64);
            if((temp & 0x01) != 0)
            {
-              (void)port_byte_in(0x60);
+              (void)inb(0x60);
               continue;
            }
         } 
         while((temp & 0x02) != 0);
         
         //Restart
-        port_byte_out(0x70, 0x8F);
-        port_byte_out(0x71, 0x00);
-        port_byte_out(0x70, 0x00);
-        port_byte_out(0x92, port_byte_in(0x92) | 0x1);
+        outb(0x70, 0x8F);
+        outb(0x71, 0x00);
+        outb(0x70, 0x00);
+        outb(0x92, inb(0x92) | 0x1);
     }
     else
     {
