@@ -61,7 +61,7 @@ void kernel_main(multiboot_info_t* mboot_ptr, uint32_t initial_stack)
         {
             printf("\t contents: \"");
             char buf[256];
-            memset(buf, 0, 256 / sizeof(int));
+            memset(buf, 0, 256);
             uint32_t size = read_fs(fsnode, 0, 256, buf);
             printf(buf);
 
