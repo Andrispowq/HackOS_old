@@ -3,48 +3,40 @@
 #include "../libc/memory.h"
 #include "../libc/string.h"
 
+static DISPLAY* curr_display;
+
 /* Declaration of private functions */
+void clear_screen();
+int put_char(char ch);
+int put_string(const char* str);
+void put_backspace();
+void scroll_up();
+
 int get_cursor_offset();
 void set_cursor_offset(int offset);
-int putchar(char str);
 int get_offset(int col, int row);
 int get_offset_row(int offset);
 int get_offset_col(int offset);
 
-void scroll_down();
-void scroll_up();
-
-//Used for scrolling up, and down
-char* prev_scr = 0;
-char* next_scr = 0;
-
-//We define this value between 0 and MAX_ROWS * 3, because we have 3 screens in memory
-int curr_abs_row;
-
-void clear_screen() 
+void init_display()
 {
-    if(prev_scr != 0)
-    {
-        memset(prev_scr, 0, 2 * MAX_COLS * MAX_ROWS);
-    }
-    if(next_scr != 0)
-    {
-        memset(next_scr, 0, 2 * MAX_COLS * MAX_ROWS);
-    }
+    curr_display = (DISPLAY*) kmalloc(sizeof(DISPLAY));
 
-    curr_abs_row = 0;
+    curr_display->width = MAX_COLS;
+    curr_display->height = MAX_ROWS;
+    curr_display->console.fgColour = 0x0;
+    curr_display->console.bgColour = 0xF;
+    curr_display->console.current_x = 0;
+    curr_display->console.current_y = 0;
+    curr_display->puts = put_string;
+    curr_display->putc = put_char;
+    curr_display->put_backspace = put_backspace;
+    curr_display->clear = clear_screen;
+}
 
-    int screen_size = MAX_COLS * MAX_ROWS;
-    int i;
-    char *screen = (char*)VIDEO_ADDRESS;
-
-    for (i = 0; i < screen_size; i++) 
-    {
-        screen[i * 2 + 0] = ' ';
-        screen[i * 2 + 1] = WHITE_ON_BLACK;
-    }
-
-    set_cursor_offset(get_offset(0, 0));
+void clrscr()
+{
+    curr_display->clear();
 }
 
 /**
@@ -63,7 +55,7 @@ void printf(const char* format, ...)
     {
         if (c != '%')
         {
-            putchar(c);
+            curr_display->putc(c);
         }
         else 
         {
@@ -87,8 +79,8 @@ void printf(const char* format, ...)
             {
             case 'X':
             case 'x':
-                putchar('0');
-                putchar('x');
+                curr_display->putc('0');
+                curr_display->putc('x');
             case 'd':
             case 'u':
                 itoa (buf, c, *((int *) arg++));
@@ -101,12 +93,12 @@ void printf(const char* format, ...)
             string:
                 for (p2 = p; *p2; p2++);
                 for (; p2 < p + pad; p2++)
-                    putchar((char)(pad0 ? '0' : ' '));
+                    curr_display->putc((char)(pad0 ? '0' : ' '));
                 while (*p)
-                    putchar((char)(*p++));
+                    curr_display->putc((char)(*p++));
                 break;
             default:
-                putchar((char)(*((int*) arg++)));
+                curr_display->putc((char)(*((int*) arg++)));
                 break;
             }
         }
@@ -115,14 +107,46 @@ void printf(const char* format, ...)
 
 void printf_backspace() 
 {
-    putchar((char)0x08);
+    curr_display->put_backspace();
 }
 
 /**********************************************************
  * Private kernel functions                               *
  **********************************************************/
 
-int putchar(char str) 
+void clear_screen()
+{
+    int screen_size = MAX_COLS * MAX_ROWS;
+    int i;
+    char *screen = (char*)VIDEO_ADDRESS;
+
+    for (i = 0; i < screen_size; i++) 
+    {
+        screen[i * 2 + 0] = ' ';
+        screen[i * 2 + 1] = WHITE_ON_BLACK;
+    }
+
+    set_cursor_offset(get_offset(0, 0));
+}
+
+void put_backspace()
+{
+    put_char((char)0x08);
+}
+
+int put_string(const char* str)
+{
+    char c;
+    int i = 0;
+    while((c = str[i++]) != 0)
+    {
+        put_char(c);
+    }
+
+    return i;
+}
+
+int put_char(char ch) 
 {
     unsigned char *vidmem = (unsigned char*) VIDEO_ADDRESS;
 
@@ -130,136 +154,76 @@ int putchar(char str)
     int row = get_offset_row(cursor);
     int col = get_offset_col(cursor);
 
-    if(str == '\n')
+    if(ch == '\n')
     {
         cursor = get_offset(0, row + 1);
-        curr_abs_row++;
     }
-    else if(str == '\r')
+    else if(ch == '\r')
     {
         cursor = get_offset(0, row);
     }
-    else if(str == '\t')
+    else if(ch == '\t')
     {
         cursor = get_offset(col + 4, row);
     }
-    else if (str == 0x08) /* Backspace */
+    else if (ch == 0x08) /* Backspace */
     {
         cursor -= 2;
         vidmem[cursor] = ' ';
-        vidmem[cursor + 1] = WHITE_ON_BLACK;
+        vidmem[cursor + 1] = COLOUR(curr_display->console.fgColour, 
+            curr_display->console.bgColour);
     }
     else
     {
-        vidmem[cursor] = str;
-        vidmem[cursor + 1] = WHITE_ON_BLACK;
+        vidmem[cursor] = ch;
+        vidmem[cursor + 1] = COLOUR(curr_display->console.fgColour, 
+            curr_display->console.bgColour);
         cursor = cursor + 2;
     }
 
     /* Check if the offset is over screen size and scroll */
     if (cursor >= MAX_ROWS * MAX_COLS * 2) 
     {
-        scroll_down();
+        scroll_up();
         cursor -= 2 * MAX_COLS;
     }
+
+    curr_display->console.current_x = get_offset_col(cursor);
+    curr_display->console.current_y = get_offset_row(cursor);
 
     set_cursor_offset(cursor);
     return cursor;
 }
 
-void scroll_down()
-{
-    curr_abs_row++;
-    int i;
-
-    if(prev_scr == 0)
-    {
-        prev_scr = (char*)kmalloc(2 * MAX_COLS * MAX_ROWS);
-    }
-
-    //Copy first line
-    memcpy((void*)(prev_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
-        (const void*)VIDEO_ADDRESS, MAX_COLS * 2);
-
-    //Move everything up
-    for (i = 1; i < MAX_ROWS; i++)
-    {
-        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i - 1)),
-            (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
-            MAX_COLS * 2);
-    }
-
-    //If there was a line after the last one, copy it, if not, make it black
-    if(next_scr != 0)
-    {
-        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1)),
-            (const void*)next_scr + get_offset(0, (MAX_ROWS - (curr_abs_row % MAX_ROWS) - 1)),
-            MAX_COLS * 2);
-    }
-    else
-    {
-        char* last_line = (char*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1));
-        for (i = 0; i < MAX_COLS * 2; i++) 
-            last_line[i] = 0;        
-    }
-}
-
 void scroll_up()
 {
-    curr_abs_row--;
+    //Move everything up
     int i;
-
-    if(next_scr == 0)
-    {
-        next_scr = (char*)kmalloc(2 * MAX_COLS * MAX_ROWS);
-    }
-
-    //Copy the last line onto the next_scr buffer
-    memcpy((void*)(next_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
-        (const void*)VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1), 
-        MAX_COLS * 2);
-
-    //Move everything down
     for (i = 0; i < MAX_ROWS - 1; i++)
     {
-        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i + 1)),
-            (const void*)(VIDEO_ADDRESS + get_offset(0, i)), 
+        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, i)),
+            (const void*)(VIDEO_ADDRESS + get_offset(0, i + 1)), 
             MAX_COLS * 2);
     }
 
-    //Copy the last line of the previous screen, if there is one, otherwise, zero it
-    if(prev_scr != 0)
-    {
-        memcpy((void*)(VIDEO_ADDRESS + get_offset(0, 0)),
-            (const void*)(prev_scr + get_offset(0, curr_abs_row % MAX_ROWS)),
-            MAX_COLS * 2);
-    }
-    else
-    {
-        char *last_line = (char*)VIDEO_ADDRESS;
-        for (i = 0; i < MAX_COLS * 2; i++) 
-            last_line[i] = 0;        
-    }
+    //Clear the last row
+    memset((void*)(VIDEO_ADDRESS + get_offset(0, MAX_ROWS - 1)),
+        0, MAX_COLS * 2);
 }
 
 int get_cursor_offset() 
 {
-    /* Use the VGA ports to get the current cursor position
-     * 1. Ask for high byte of the cursor offset (data 14)
-     * 2. Ask for low byte (data 15)
-     */
     outb(REG_SCREEN_CTRL, 14);
-    int offset = inb(REG_SCREEN_DATA) << 8; /* High byte: << 8 */
+    int offset = inb(REG_SCREEN_DATA) << 8;
 
     outb(REG_SCREEN_CTRL, 15);
     offset += inb(REG_SCREEN_DATA);
 
-    return offset * 2; /* Position * size of character cell */
+    return offset * 2;
 }
 
 void set_cursor_offset(int offset) 
 {
-    /* Similar to get_cursor_offset, but instead of reading we write data */
     offset /= 2;
 
     outb(REG_SCREEN_CTRL, 14);

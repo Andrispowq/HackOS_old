@@ -25,7 +25,8 @@ void kernel_main(multiboot_info_t* mboot_ptr, uint32_t initial_stack)
 {
     initial_esp = initial_stack;
 
-    clear_screen();
+    init_display();
+    clrscr();
 
     gdt_install();
     isr_install();
