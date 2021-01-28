@@ -9,6 +9,10 @@
 #define PROCESS_STATE_ZOMBIE 1
 #define PROCESS_STATE_DEAD 2
 
+#define SIG_ILL 1
+#define SIG_TERM 2
+#define SIG_SEGV 3
+
 void move_stack(void* new_stack_start, uint32_t size);
 extern void jump_to_ecx(uint32_t eip, uint32_t pageDirAddr, uint32_t ebp, uint32_t esp);
 

@@ -79,8 +79,6 @@ void printf(const char* format, ...)
             {
             case 'X':
             case 'x':
-                curr_display->putc('0');
-                curr_display->putc('x');
             case 'd':
             case 'u':
                 itoa (buf, c, *((int *) arg++));
@@ -123,7 +121,8 @@ void clear_screen()
     for (i = 0; i < screen_size; i++) 
     {
         screen[i * 2 + 0] = ' ';
-        screen[i * 2 + 1] = WHITE_ON_BLACK;
+        screen[i * 2 + 1] = COLOUR(curr_display->console.fgColour,
+            curr_display->console.bgColour);
     }
 
     set_cursor_offset(get_offset(0, 0));
@@ -188,9 +187,6 @@ int put_char(char ch)
         cursor -= 2 * MAX_COLS;
     }
 
-    curr_display->console.current_x = get_offset_col(cursor);
-    curr_display->console.current_y = get_offset_row(cursor);
-
     set_cursor_offset(cursor);
     return cursor;
 }
@@ -225,6 +221,9 @@ int get_cursor_offset()
 void set_cursor_offset(int offset) 
 {
     offset /= 2;
+
+    curr_display->console.current_x = get_offset_col(offset);
+    curr_display->console.current_y = get_offset_row(offset);
 
     outb(REG_SCREEN_CTRL, 14);
     outb(REG_SCREEN_DATA, (unsigned char)(offset >> 8));

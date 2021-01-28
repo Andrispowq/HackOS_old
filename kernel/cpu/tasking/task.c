@@ -124,22 +124,22 @@ void tasking_print_all()
 
 void __notified(int sig)
 {
-	/*switch(sig)
+	switch(sig)
 	{
 		case SIG_ILL:
-			pidprint("Received SIGILL, terminating!\n");
+			printf("Received SIGILL, terminating!\n");
 			_kill();
 			break;
 		case SIG_TERM:
-			pidprint("Received SIGTERM, terminating!\n");
+			printf("Received SIGTERM, terminating!\n");
 			_kill();
 		case SIG_SEGV:
-			pidprint("Received SIGSEGV, terminating!\n");
+			printf("Received SIGSEGV, terminating!\n");
 			_kill();
 		default:
-			pidprint("Received unknown SIG!\n");
+			printf("Received unknown SIG!\n");
 			return;
-	}*/
+	}
 }
 
 int is_pid_running(uint32_t pid)
