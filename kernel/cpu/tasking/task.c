@@ -1,125 +1,279 @@
 #include "task.h"
+#include "../../kernel.h"
 
-// The currently running task.
-volatile task_t* current_task;
-
-// The start of the task linked list.
-volatile task_t* ready_queue;
+PROCESS* cp;
+PROCESS* ready_queue;
+uint32_t lpid = 0;
+uint8_t __enabled = 0;
 
 extern uint32_t initial_esp;
 extern page_directory_t* current_directory;
 extern page_directory_t* kernel_directory;
 
 extern void alloc_frame(page_t* page, int is_kernel, int is_writeable);
-extern uint32_t read_eip();
+extern void set_task(uint8_t i);
+extern void enable_task();
 
-// The next available process ID.
-uint32_t next_pid = 1;
-
-void initialise_tasking()
+void task_confirm()
 {
-    asm volatile("cli");
-
-    // Relocate the stack so we know where it is
-    move_stack((void*)0xE0000000, 0x2000);
-
-    // Initialise the first task (kernel task)
-    current_task = ready_queue = (task_t*)kmalloc(sizeof(task_t));
-    current_task->id = next_pid++;
-    current_task->esp = current_task->ebp = 0;
-    current_task->eip = 0;
-    current_task->page_directory = current_directory;
-    current_task->next = 0;
-
-    asm volatile("sti");
+	printf("Tasking is running!\n");
+    _kill();
 }
 
-int fork()
+void idle_thread()
 {
-    asm volatile("cli");
-    
-    task_t* parent_task = (task_t*)current_task;
-    page_directory_t* directory = clone_directory(current_directory);
-
-    task_t* new_task = (task_t*) kmalloc(sizeof(task_t));
-    new_task->id = next_pid++;
-    new_task->esp = new_task->ebp = 0;
-    new_task->eip = 0;
-    new_task->page_directory = directory;
-    new_task->next = 0;
-
-    task_t* tmp_task = (task_t*)ready_queue;
-    while (tmp_task->next)
-       tmp_task = tmp_task->next;
-    
-    tmp_task->next = new_task;
-
-    uint32_t eip = read_eip();
-    
-    if (current_task == parent_task)
-    {
-        uint32_t esp; 
-        asm volatile("mov %%esp, %0" : "=r"(esp));
-        uint32_t ebp; 
-        asm volatile("mov %%ebp, %0" : "=r"(ebp));
-
-        new_task->esp = esp;
-        new_task->ebp = ebp;
-        new_task->eip = eip;
-
-        asm volatile("sti");
-
-        return new_task->id;
-    }
-    else
-    {
-        return 0;
-    }
+    enable_task();
+	__enabled = 1;
+    while(1);
 }
 
-void switch_task()
+void kill(uint32_t pid)
 {
-    if(!current_task)
-        return;
+	if(pid == 1) printf("Idle can't be killed!\n");
+	if(pid == cp->id) _kill();
 
-    uint32_t esp, ebp, eip;
-    asm volatile("mov %%esp, %0" : "=r"(esp));
-    asm volatile("mov %%ebp, %0" : "=r"(ebp)); 
+	PROCESS* orig = cp;
+	PROCESS* p = orig;
 
-    // Read the instruction pointer. We do some cunning logic here:
-    // One of two things could have happened when this function exits -
-    // (a) We called the function and it returned the EIP as requested.
-    // (b) We have just switched tasks, and because the saved EIP is essentially
-    // the instruction after read_eip(), it will seem as if read_eip has just
-    // returned.
-    // In the second case we need to return immediately. To detect it we put a dummy
-    // value in EAX further down at the end of this function. As C returns values in EAX,
-    // it will look like the return value is this dummy value! (0x12345).
-    eip = read_eip();
+	while(p)
+	{
+		if(p->id == pid) 
+        {
+			printf("Process %s (%d) was set to ZOMBIE.\n", p->name, pid);
+			p->state = PROCESS_STATE_ZOMBIE;
+			break;
+		}
 
-    // Have we just switched tasks?
-    if (eip == 0x12345)
-        return;
+		p = p->next;
+	}
+}
 
-    current_task->eip = eip;
-    current_task->esp = esp;
-    current_task->ebp = ebp;
+void send_sig(int sig)
+{
+	cp->notify(sig);
+}
 
-    current_task = current_task->next;
-    if(!current_task) current_task = ready_queue; //If we're at the end, start over again
+int is_tasking()
+{
+	return __enabled;
+}
 
-    eip = current_task->eip;
-    esp = current_task->esp;
-    ebp = current_task->ebp;
+PROCESS* get_process()
+{
+	return cp;
+}
 
-    current_directory = current_task->page_directory;
-
-    jump_to_ecx(eip, current_directory->physicalAddr, ebp, esp);
+char* get_name()
+{
+	return cp->name;
 }
 
 int getpid()
 {
-    return current_task->id;
+	return cp->id;
+}
+
+void _kill()
+{
+	asm volatile("cli");
+
+	if(cp->id == 1) 
+    { 
+        set_task(0); 
+        printf("Idle can't be killed!\n");
+        while(1) asm volatile("hlt");
+    }
+
+	//printf("Killing process %s (%d)\n", cp->name, cp->id);
+
+	set_task(0);
+	kfree(cp->page_directory);
+
+    PROCESS* tmp = ready_queue;
+    while(tmp)
+    {
+        if(tmp->next == cp)
+        {
+            tmp->next = cp->next;
+        }
+
+        tmp = tmp->next;
+    }
+	kfree(cp);
+	set_task(1);
+
+	asm volatile("sti");
+
+	schedule();
+}
+
+void tasking_print_all()
+{
+	PROCESS *orig = cp;
+	PROCESS *p = orig;
+
+	while(1)
+	{
+		printf("Process: %s (%d) %s\n", p->name, p->id,
+			p->state == PROCESS_STATE_ZOMBIE ? "ZOMBIE":
+					p->state==PROCESS_STATE_ALIVE ? "ALIVE" : "DEAD");
+		p = p->next;
+		if(p == orig) break;
+	}
+}
+
+void __notified(int sig)
+{
+	/*switch(sig)
+	{
+		case SIG_ILL:
+			pidprint("Received SIGILL, terminating!\n");
+			_kill();
+			break;
+		case SIG_TERM:
+			pidprint("Received SIGTERM, terminating!\n");
+			_kill();
+		case SIG_SEGV:
+			pidprint("Received SIGSEGV, terminating!\n");
+			_kill();
+		default:
+			pidprint("Received unknown SIG!\n");
+			return;
+	}*/
+}
+
+int is_pid_running(uint32_t pid)
+{
+	set_task(0);
+
+	PROCESS* p = cp;
+	PROCESS* orig = cp;
+
+	int ret = 0;
+	while(1)
+	{
+		if(p->id == pid)  
+        { 
+            ret = 1; 
+            break;
+        }
+
+		p = p->next;
+		if(p == orig) break;
+	}
+
+	set_task(1);
+	return ret;
+}
+
+PROCESS* createProcess(char* name, void* addr)
+{
+	PROCESS* p = (PROCESS*) kmalloc(sizeof(PROCESS));
+	memset(p, 0, sizeof(PROCESS));
+
+	p->name = name;
+	p->id = ++lpid;
+	p->eip = (uint32_t)addr;
+	p->state = PROCESS_STATE_ALIVE;
+	p->notify = __notified;
+    p->page_directory = clone_directory(current_directory);
+    p->next = 0;
+
+	p->esp = kmalloc(4096);
+	uint32_t* stack = (uint32_t*)(p->esp + 4096);
+	p->ebp = stack;
+	*--stack = 0x00000202; // eflags
+	*--stack = 0x8; // cs
+	*--stack = (uint32_t)addr; // eip
+	*--stack = 0; // eax
+	*--stack = 0; // ebx
+	*--stack = 0; // ecx;
+	*--stack = 0; //edx
+	*--stack = 0; //esi
+	*--stack = 0; //edi
+	*--stack = p->esp + 4096; //ebp
+	*--stack = 0x10; // ds
+	*--stack = 0x10; // fs
+	*--stack = 0x10; // es
+	*--stack = 0x10; // gs
+	p->esp = (uint32_t)stack;
+
+	return p;
+}
+
+/* This adds a process while no others are running! */
+void __addProcess(PROCESS* p)
+{
+    PROCESS* tmp = ready_queue;
+    while (tmp->next)
+       tmp = tmp->next;
+
+    tmp->next = p;
+    return;
+}
+
+/* add process but take care of others also! */
+int addProcess(PROCESS* p)
+{
+	set_task(0);
+	__addProcess(p);
+	set_task(1);
+	return p->id;
+}
+
+void __exec()
+{
+    uint32_t esp, ebp, eip;
+    eip = cp->eip;
+    esp = cp->esp;
+    ebp = cp->ebp;
+
+    current_directory = cp->page_directory;
+
+    //printf("ESP: %x, EBP: %x, EIP: %x, curr_dir: %x\n", esp, ebp, eip, current_directory->physicalAddr);
+    jump_to_ecx(eip, current_directory->physicalAddr, ebp, esp);
+}
+
+void schedule_noirq()
+{
+	if(!__enabled) return;
+	asm volatile("int $0x2E");
+	return;
+}
+
+void schedule()
+{
+    uint32_t esp, ebp, eip;
+
+    cp = cp->next;
+    if(!cp) cp = ready_queue; //If we're at the end, start over again
+
+    eip = cp->eip;
+    esp = cp->esp;
+    ebp = cp->ebp;
+
+    current_directory = cp->page_directory;
+
+    //printf("ESP: %x, EBP: %x, EIP: %x, curr_dir: %x\n", esp, ebp, eip, current_directory->physicalAddr);
+    jump_to_ecx(eip, current_directory->physicalAddr, ebp, esp);
+}
+
+void initialise_tasking()
+{
+    // Relocate the stack so we know where it is
+    move_stack((void*)0xE0000000, 0x2000);
+
+	cp = createProcess("kernel_idle", idle_thread);
+	cp->next = 0;
+    ready_queue = cp;
+
+	__addProcess(createProcess("task_confirm", task_confirm));
+	__addProcess(createProcess("kernel", kernel_task));
+	__exec();
+
+    asm volatile("sti");
+
+	printf("Failed to start tasking!");
 }
 
 void move_stack(void* new_stack_start, uint32_t size)
@@ -166,25 +320,4 @@ void move_stack(void* new_stack_start, uint32_t size)
     // Change stacks.
     asm volatile("mov %0, %%esp" : : "r" (new_stack_pointer));
     asm volatile("mov %0, %%ebp" : : "r" (new_base_pointer));
-}
-
-void switch_to_user_mode()
-{
-    asm volatile("  \
-        cli; \
-        mov $0x23, %ax; \
-        mov %ax, %ds; \
-        mov %ax, %es; \
-        mov %ax, %fs; \
-        mov %ax, %gs; \
-                      \
-        mov %esp, %eax; \
-        pushl $0x23; \
-        pushl %eax; \
-        pushf; \
-        pushl $0x1B; \
-        push $1f; \
-        iret; \
-    1: \
-    ");
 }

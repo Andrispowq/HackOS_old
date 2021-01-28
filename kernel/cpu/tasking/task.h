@@ -5,26 +5,46 @@
 #include "../../libc/string.h"
 #include "../paging/paging.h"
 
+#define PROCESS_STATE_ALIVE 0
+#define PROCESS_STATE_ZOMBIE 1
+#define PROCESS_STATE_DEAD 2
+
 void move_stack(void* new_stack_start, uint32_t size);
-
-typedef struct task
-{
-    int id;                             // Process ID.
-    uint32_t esp, ebp;                  // Stack and base pointers.
-    uint32_t eip;                       // Instruction pointer.
-    page_directory_t* page_directory;   // Page directory.
-    struct task* next;                  // The next task in a linked list.
-} task_t;
-
-extern uint32_t read_eip();
 extern void jump_to_ecx(uint32_t eip, uint32_t pageDirAddr, uint32_t ebp, uint32_t esp);
 
-void initialise_tasking();
-void switch_task();
-int fork();
-void move_stack(void* new_stack_start, uint32_t size);
-int getpid();
+typedef struct process
+{
+	char* name;
+    int id;
+    uint32_t esp, ebp;
+    uint32_t eip;
+	uint32_t state;
+    page_directory_t* page_directory;
 
-void switch_to_user_mode();
+	void (*notify)(int);
+
+    struct process* next;
+} PROCESS;
+
+int addProcess(PROCESS* t);
+PROCESS* createProcess(char* name, void* addr);
+
+int is_pid_running(uint32_t pid);
+
+int is_tasking();
+
+char* get_name();
+int getpid();
+PROCESS* get_process();
+
+void send_sig(int sig);
+
+void tasking_print_all();
+
+void _kill();
+void kill();
+void schedule();
+void schedule_noirq();
+void initialise_tasking();
 
 #endif

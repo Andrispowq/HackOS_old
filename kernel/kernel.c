@@ -38,15 +38,15 @@ void kernel_main(multiboot_info_t* mboot_ptr, uint32_t initial_stack)
     free_mem_addr = initrd_end;
 
     initialise_paging();
-    initialise_tasking();
-
     fs_root = initialise_initrd(initrd_location);
 
-    int ret = fork();
-    printf("fork() returned %x, and getpid() returned %x\n", ret, getpid());
+    initialise_tasking();
+}
 
+void kernel_task()
+{
     asm volatile("cli");
-    
+
     int i = 0;
     struct dirent* node = 0;
     while ((node = readdir_fs(fs_root, i)) != 0)
@@ -72,8 +72,7 @@ void kernel_main(multiboot_info_t* mboot_ptr, uint32_t initial_stack)
     }
 
     printf("Type 'help' for help!\n> ");
-
-    asm volatile("sti");
+    _kill();
 }
 
 void user_input(char* input) 

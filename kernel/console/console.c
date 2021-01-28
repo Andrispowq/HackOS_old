@@ -57,7 +57,7 @@ void command_mode(char* input)
     }
     else if(check_command(input, "clear"))
     {
-        clear_screen();
+        clrscr();
         printf("Type 'shutdown' to halt the CPU");
 
         state = COMMAND_MODE;

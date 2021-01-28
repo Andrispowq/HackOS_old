@@ -1,7 +1,6 @@
 bits 32
 
 global copy_page_physical
-global read_eip
 global jump_to_ecx
 
 copy_page_physical:
@@ -37,10 +36,6 @@ copy_page_physical:
     pop     ebx
     
     ret
-
-read_eip:
-    pop     eax
-    jmp     eax
 
 jump_to_ecx:
     cli
