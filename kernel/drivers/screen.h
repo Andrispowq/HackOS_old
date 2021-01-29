@@ -34,7 +34,6 @@ typedef struct
 
 /* Public kernel API */
 void clrscr();
-void printf(const char* format, ...);
 void printf_backspace();
 
 void init_display();

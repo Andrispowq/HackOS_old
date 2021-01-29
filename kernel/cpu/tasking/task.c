@@ -1,4 +1,5 @@
 #include "task.h"
+#include "../../libc/stdio.h"
 #include "../../kernel.h"
 
 PROCESS* cp;
@@ -181,7 +182,7 @@ PROCESS* createProcess(char* name, void* addr)
 
 	p->esp = kmalloc(4096);
 	uint32_t* stack = (uint32_t*)(p->esp + 4096);
-	p->ebp = stack;
+	p->ebp = (uint32_t)stack;
 	*--stack = 0x00000202; // eflags
 	*--stack = 0x8; // cs
 	*--stack = (uint32_t)addr; // eip

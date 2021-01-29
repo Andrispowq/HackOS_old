@@ -1,5 +1,5 @@
 #include "paging.h"
-#include "../../drivers/screen.h"
+#include "../../libc/stdio.h"
 #include "../idt.h"
 
 page_directory_t* kernel_directory = 0;

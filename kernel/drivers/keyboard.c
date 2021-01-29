@@ -5,6 +5,7 @@
 #include "../libc/string.h"
 #include "../libc/memory.h"
 #include "../libc/function.h"
+#include "../libc/stdio.h"
 #include "../kernel.h"
 
 #define HUNGARIAN_LAYOUT 0
@@ -158,6 +159,16 @@ int get_index_of_control_key(int scancode)
 }
 
 void init_keyboard() 
-{
+{    
+    while(inb(0x64) & 0x1)
+        inb(0x60);
+    
+    outb(0x64, 0xAE); // activate interrupts
+    outb(0x64, 0x20); // command 0x20 = read controller command byte
+    uint8_t status = (inb(0x60) | 1) & ~0x10;
+    outb(0x64, 0x60); // command 0x60 = set controller command byte
+    outb(0x60, status);
+    outb(0x60, 0xF4);
+
     register_interrupt_handler(IRQ1, keyboard_callback);
 }

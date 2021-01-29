@@ -2,8 +2,9 @@
 #include "idt.h"
 #include "ports.h"
 #include "timer.h"
-#include "../drivers/screen.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/mouse.h"
+#include "../libc/stdio.h"
 #include "../libc/string.h"
 
 isr_t interrupt_handlers[256];
@@ -157,5 +158,7 @@ void irq_handler(registers_t* r)
 void irq_install() 
 {
     init_timer(1000); //1 tick per 1 ms
+    
+    init_mouse(10);
     init_keyboard();
 }

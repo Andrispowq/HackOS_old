@@ -3,7 +3,7 @@
 
 #include "../libc/string.h"
 #include "../libc/memory.h"
-#include "../drivers/screen.h"
+#include "../libc/stdio.h"
 
 #define INVALID_MODE -1
 #define COMMAND_MODE 0
